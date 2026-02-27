@@ -31,9 +31,9 @@ Changes in this fork:
 
 ### External References
 
-- [Dataset Generation (INSTA)](https://github.com/Zielon/INSTA?tab=readme-ov-file#dataset-and-training)
-- [Metrical Photometric Tracker](https://github.com/Zielon/metrical-tracker)
 - [FLAME Model Download](https://flame.is.tue.mpg.de/download.php)
+- [Metrical Photometric Tracker](https://github.com/Zielon/metrical-tracker)
+- [Dataset Generation (INSTA)](https://github.com/Zielon/INSTA?tab=readme-ov-file#dataset-and-training)
 - [Pretrained Avatar Models (OneDrive)](https://1drv.ms/u/c/c605a9d7c777e7ad/EX9KEcOnCgpOp_TWX0yCjO8BZlWfLv_Wbj3HDw6cPXwpIg?e=KJas7Z)
 
 ### Functional Capabilities
