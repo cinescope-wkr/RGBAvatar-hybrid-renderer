@@ -1,4 +1,7 @@
 import os
+# Workaround for duplicate OpenMP runtime loading on Windows setups.
+# Keep this before importing torch/numpy-backed libraries.
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 import sys
 import time
 import yaml
@@ -56,7 +59,7 @@ if __name__ == "__main__":
     parser.add_argument("--config", type=str, default="config/offline.yaml")
     parser.add_argument("--split", type=str, default="train")
     parser.add_argument("--preload", action="store_true")
-    parser.add_argument("--log", action="store_true")
+    parser.add_argument("--log", action="store_false", help="Disable logging")
     args = parser.parse_args(sys.argv[1:])
     with open(args.config) as f: config = yaml.load(f, Loader=yaml.FullLoader)
 

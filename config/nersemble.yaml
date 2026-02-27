@@ -1,4 +1,4 @@
-data_dir: /home/lilinzhou/dataset/NeRSemble/GA # Please set your own dataset path
+data_dir: ./data # Please set your own dataset path
 output_dir: ./output/
 template_type: Flame
 

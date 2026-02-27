@@ -117,7 +117,7 @@ class BindingModel(GaussianModel):
     def fast_forward_torch(self, est_color, est_weight):
         est_color = torch.sum(est_color, dim=0)
         est_weight = torch.sum(est_weight, dim=0)
-        est_weight_mask = est_weight > 0.1
+        est_weight_mask = est_weight > 0.01
         fast_forward_mask = torch.logical_and(est_weight_mask, ~self.gs_initialized)
         self.gs_initialized = torch.logical_or(self.gs_initialized, fast_forward_mask)
         fast_forward_indices = torch.nonzero(fast_forward_mask).squeeze(-1)
@@ -128,7 +128,7 @@ class BindingModel(GaussianModel):
         est_color = torch.sum(est_color, dim=0)
         est_weight = torch.sum(est_weight, dim=0)
         fast_forward(
-            0.1, # weight_threshold
+            0.01, # weight_threshold
             est_color,
             est_weight,
             self.gs_initialized,
@@ -170,7 +170,10 @@ class BindingModel(GaussianModel):
         xyz = torch.matmul(binding_rotations, gs.xyz.unsqueeze(-1)).squeeze(-1).view(batch_size, -1, 3) # [B, N, 3]
         xyz += binding_offsets # [B, N, 3]
         rotation = quaternion_multiply(matrix_to_quaternion(binding_rotations), gs.rotation) # [B, N, 4]
-        return GaussianAttributes(xyz, gs.opacity, gs.scaling, rotation, gs.sh)
+
+        sh = torch.cat([self.gaussian._features_dc, self.gaussian._features_rest], dim=1)
+        
+        return GaussianAttributes(xyz, gs.opacity, gs.scaling, rotation, sh)
     
     def gaussian_deform(self, mesh_verts: torch.Tensor, blend_weight: Optional[torch.Tensor] = None):
         tri_verts = mesh_verts[self.template_faces].unsqueeze(0)

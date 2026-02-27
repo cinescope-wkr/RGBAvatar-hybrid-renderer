@@ -1,206 +1,518 @@
-# RGBAvatar
+# RGBAvatar Technical Specification
 
-[Paper](https://arxiv.org/pdf/2503.12886) | [Webpage](https://gapszju.github.io/RGBAvatar/)
+Official codebase for CVPR 2025 paper:
+`RGBAvatar: Reduced Gaussian Blendshapes for Online Modeling of Head Avatars`.
 
-Official implementation of CVPR 2025 Highlight paper "RGBAvatar: Reduced Gaussian Blendshapes for Online Modeling of Head Avatars".
+Paper: https://arxiv.org/pdf/2503.12886  
+Project page: https://gapszju.github.io/RGBAvatar/
+Original RGBAvatar repository: https://github.com/gapszju/RGBAvatar
 
+## Fork Notice
 
-## Installation
+This repository is a fork of the original RGBAvatar project.
+It was modified in part for Gaussian-mesh hybrid rendering research workflows while keeping the RGBAvatar training/rendering pipeline usable.
 
-1. Clone this repository.
+Fork maintainer:
+- Jinwoo Lee (cinescope@kaist.ac.kr)
 
-   ```
-   git clone https://github.com/gapszju/RGBAvatar.git
-   cd RGBAvatar
-   ```
+Changes in this fork:
+- `render.py` modernization:
+  - Refactored into clearer functions (`parse_args`, `render_frames`, `render_orbit`, `build_dataset_and_model`, `main`).
+  - CLI improved for practical rendering control (`batch_size`, `io_workers`, orbit controls, PLY range export).
+  - Deformed PLY export simplified to a single consistent policy (direct render-time deformed geometry export).
+- `model/reconstruction.py` cleanup:
+  - Broken/garbled comments removed and rewritten in clear English.
+  - Unused imports/legacy noise removed while preserving training behavior.
+  - Loss blocks and scheduling logic documented and organized for maintainability.
+- Configuration and training updates for dense fixed-topology runs:
+  - Added/used surface bind regularization (`lambda_surface`), LPIPS warmup behavior, and tuned high-density defaults in `config/offline.yaml`.
+- Documentation overhaul:
+  - README rewritten as technical spec with explicit input/output contracts, dataset layout, command references, and external preprocessing links.
+- NeRSemble status:
+  - NeRSemble scripts are kept, but no additional implementation/testing beyond inherited baseline has been performed in this fork.
 
-2. Create conda environment.
+Supported workflows in this fork:
+- Offline training (`train_offline.py`)
+- Online training (`train_online.py`)
+- Multi-view NeRSemble training (`train_offline_nersemble.py`)
+- Rendering (`render.py`, `render_nersemble.py`)
+- Metrics (`calculate_metrics.py`)
 
-   ```
-   conda create -n rgbavatar python=3.10
-   conda activate rgbavatar
-   ```
+### External References
 
-3. Install [PyTorch](https://pytorch.org/get-started/locally/) and [nvdiffrast](https://nvlabs.github.io/nvdiffrast/). Please make sure that the PyTorch CUDA version matches your system's CUDA version. We use CUDA 11.8 here.
+- INSTA: https://github.com/Zielon/INSTA?tab=readme-ov-file#dataset-and-training
+- Metrical Photometric Tracker: https://github.com/Zielon/metrical-tracker
+- FLAME model download: https://flame.is.tue.mpg.de/download.php
+- Pretrained avatar models (OneDrive): https://1drv.ms/u/c/c605a9d7c777e7ad/EX9KEcOnCgpOp_TWX0yCjO8BZlWfLv_Wbj3HDw6cPXwpIg?e=KJas7Z
 
-   ```
-   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-   
-   pip install git+https://github.com/NVlabs/nvdiffrast
-   ```
+### Functional Capabilities
 
-4. Install other packages.
+- UV raster-space binding of Gaussians to mesh faces via barycentric coordinates.
+- Per-frame mesh deformation and Gaussian re-binding (`gaussian_deform_batch`).
+- Blend-weight projection module (linear or MLP) for reduced Gaussian blendshape control.
+- Fast-forward color initialization for uninitialized Gaussians.
+- Training losses including Charbonnier/SSIM/LPIPS/alpha/sparsity/orth/normal/scale/surface-bind.
+- Export and reload model as `.ply` with basis parameters.
+- Utility conversion from 3DGS-style `.ply` to `.pt` tensor format.
 
-   ```
-   pip install -r requirements.txt
-   ```
+## 1. Build and Dependency Requirements
 
-5. Compile PyTorch CUDA extension.
+### 1.1 Supported Host
 
-   ```
-   pip install submodules/diff-gaussian-rasterization
-   ```
+- OS: Linux or Windows with CUDA-capable GPU (mainly tested on Windows 11).
+- Python: 3.10 recommended.
+- CUDA runtime: environment must match installed PyTorch CUDA build.
 
-## Data Preprocessing
+### 1.2 Required Dependencies
 
-For offline reconstruction, we use FLAME template model and follow INSTA to preprocess the video sequence.
+- PyTorch / TorchVision / Torchaudio (CUDA build recommended).
+- `nvdiffrast`.
+- Packages in `requirements.txt`.
+- Local CUDA extension:
+  - `submodules/diff-gaussian-rasterization` (installed as Python package).
 
-1. You need to create an account on the [FLAME website](https://flame.is.tue.mpg.de/download.php) and download FLAME 2020 model. Please unzip FLAME2020.zip and put `generic_model.pkl` under `./data/FLAME2020`.
+### 1.3 Installation
 
-2. Please follow the instructions in [INSTA](https://github.com/Zielon/INSTA). You may first use [Metrical Photometric Tracker](https://github.com/Zielon/metrical-tracker) to track and run `generate.sh` provided by INSTA to mask the head.
+```bash
+git clone https://github.com/gapszju/RGBAvatar.git
+cd RGBAvatar
 
-3. Organize the INSTA's output in the following form, and modify the `data_dir` in config file to refer to the dataset path.
+conda create -n rgbavatar python=3.10
+conda activate rgbavatar
 
-   ```
-   <DATA_DIR>
-       ├──<SUBJECT_NAME>
-               ├── checkpoint # FLAME parameter for each frame, generated by the tracker 
-               ├── images # generated by the script of INSTA
-   ```
-
-For online reconstruction, we use FaceWareHouse template model and a real-time face tracker DDE to compute the expression coeafficients in real-time. We will release the code of this version in the future.
-
-## Running
-
-### Offline Training
-
-```
-python train_offline.py --subject SUBJECT_NAME --work_name WORK_NAME --config CONFIG_FILE_PATH --preload
-```
-
-<details>
-<summary><span style="font-weight: bold;">Command Line Arguments for train_offline.py</span></summary>
-
-  #### --subject
-  Subject name for training (`bala` by default).
-  #### --work_name
-  A nick name for the experiment, training results will be saved under `output/WORK_NAME`.
-  #### --config
-  Config file path (`config/offline.yaml` by default).
-  #### --split
-  Use `train`/`test`/`all` split of the image sequence (`train` by default).
-  #### --preload
-  Whether to preload image data to CPU memory, which accelerate the training speed.
-  #### --log
-  Whether to output log information during training.
-
-</details>
-
-We provide 12 pretrained avatar models [here](https://1drv.ms/u/c/c605a9d7c777e7ad/EX9KEcOnCgpOp_TWX0yCjO8BZlWfLv_Wbj3HDw6cPXwpIg?e=KJas7Z).
-
-### Online Training
-
-```
-python train_online.py --subject SUBJECT_NAME --work_name WORK_NAME --config CONFIG_FILE_PATH --video_fps 25
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+pip install git+https://github.com/NVlabs/nvdiffrast
+pip install -r requirements.txt
+pip install submodules/diff-gaussian-rasterization
 ```
 
-<details>
-<summary><span style="font-weight: bold;">Command Line Arguments for train_online.py</span></summary>
+## 2. Data and Asset Requirements
 
-  #### --subject
-  Subject name for training (`bala` by default).
-  #### --work_name
-  A nick name for the experiment, training results will be saved under `output/WORK_NAME`.
-  #### --config
-  Config file path (`config/online.yaml` by default).
-  #### --video_fps
-  FPS of the input video stream (`25` by default ).
-  #### --log
-  Whether to output log information during training.
+### 2.1 FLAME Model
 
-</details>
+- Download FLAME 2020 model from FLAME website:
+  - https://flame.is.tue.mpg.de/download.php
+- Place `generic_model.pkl` under:
+  - `data/FLAME2020/generic_model.pkl`
 
-### Evaluation
+### 2.2 Offline Dataset Layout (INSTA-style)
 
-```
-python calculate_metrics.py --subject SUBJECT_NAME --work_name WORK_NAME --config CONFIG_FILE_PATH
+```text
+<DATA_DIR>/
+  <SUBJECT_NAME>/
+    checkpoint/   # per-frame tracked parameters
+    images/       # RGBA or masked images
 ```
 
-<details>
-<summary><span style="font-weight: bold;">Command Line Arguments for calculate_metrics.py</span></summary>
+- Set `data_dir` in config files (`config/offline.yaml`, etc.) to `<DATA_DIR>`.
 
-  #### --subject
-  Subject name for training (`bala`  by default).
-  #### --output_dir
-  Path of the expeirment output folder (`output` by default).
-  #### --work_name
-  Name of the experiment to be evaluated.
-  #### --split
-  Frame number where split the training and test set. (`-350` by default ).
+### 2.3 Subject Dataset Contract (What Must Exist)
 
-</details>
+For each `subject`, training/evaluation scripts resolve:
 
-### Rendering
+- `data_path = <data_dir>/<subject>`
 
-```
-python render.py --subject SUBJECT_NAME --work_name WORK_NAME
-```
+With the current default in `config/offline.yaml`:
 
-<details>
-<summary><span style="font-weight: bold;">Command Line Arguments for render.py</span></summary>
+- `data_dir: ./INSTA`
+- expected subject root:
+  - `<repo_root>/INSTA/<SUBJECT_NAME>/`
 
-  #### --subject
-  Subject name for training (`bala`  by default).
-  #### --output_dir
-  Path of the expeirment output folder (`output` by default).
-  #### --work_name
-  Name of the experiment to be rendered.
-  #### --white_bg
-  Whether to use white background, back by default.
-  #### --alpha
-  Whether to render the alpha channel.
+Mandatory structure for `FLAMEDataset`:
 
-</details>
-
-### Real-time Demo
-
-TBD
-
-### Training on Mulit-View Dataset (NeRSemble)
-
-[update on 2025.08.14] We provide training and rendering scripts on NeRSemble dataset, we use the preprocessed data provided by [GaussianAvatars](https://github.com/ShenhanQian/GaussianAvatars). Please set the dataset root path in `config/nersemble.yaml` and put the `flame2023.pkl` file under `data/FLAME2023` folder. The FLAME 2023 model can be downloaded from [FLAME website](https://flame.is.tue.mpg.de/download.php).
-
-```
-python train_offline_nersemble.py --subject SUBJECT_NAME --work_name WORK_NAME --config CONFIG_FILE_PATH
+```text
+<repo_root>/
+  INSTA/
+    <SUBJECT_NAME>/
+      checkpoint/
+        00000.frame
+        00001.frame
+        ...
+      images/
+        00000.png
+        00001.png
+        ...
 ```
 
-<details>
-<summary><span style="font-weight: bold;">Command Line Arguments for train_offline_nersemble.py</span></summary>
+Required conditions:
 
-  #### --subject
-  Subject name for training (`074` by default).
-  #### --work_name
-  A nick name for the experiment, training results will be saved under `output/WORK_NAME`.
-  #### --config
-  Config file path (`config/nersemble.yaml` by default).
-  #### --log
-  Whether to output log information during training.
+- `checkpoint/00000.frame` must exist (camera intrinsics/extrinsics are loaded from frame 0).
+- `images/` and `checkpoint/` must be frame-aligned by sorted filename order.
+- Image count should match tracked frame count for clean training behavior.
+- Alpha/mask channels should already be reflected in `images/` content produced by preprocessing.
 
-</details>
+### 2.4 How to Build Subject Data (Metrical Tracker -> INSTA)
 
+This repo expects the final subject folder shown above. A practical pipeline is:
+
+1. Run Metrical Tracker on a raw subject video.
+1. Export per-frame FLAME tracking results.
+1. Run INSTA preprocessing (`generate.sh` or equivalent) to produce masked head images.
+1. Assemble outputs into this repo layout.
+
+Role split by tool:
+
+- Metrical Tracker:
+  - Produces per-frame FLAME parameter files (`*.frame`) used as `checkpoint/`.
+- INSTA:
+  - Produces processed subject images used as `images/`.
+
+Placement in this repo:
+
+- Create `<repo_root>/INSTA/<SUBJECT_NAME>/`.
+- Copy tracker outputs to:
+  - `<repo_root>/INSTA/<SUBJECT_NAME>/checkpoint/`
+- Copy INSTA image outputs to:
+  - `<repo_root>/INSTA/<SUBJECT_NAME>/images/`
+
+Then train with:
+
+```bash
+python train_offline.py --subject <SUBJECT_NAME> --config config/offline.yaml
 ```
-python render_nersemble.py --subject SUBJECT_NAME --work_name WORK_NAME
+
+Reference workflow from INSTA README:
+
+```bash
+# 1) Run Metrical Photometric Tracker for a selected actor
+python tracker.py --cfg ./configs/actors/duda.yml
+
+# 2) Generate dataset from absolute input/output paths
+./generate.sh /metrical-tracker/output/duda INSTA/data/duda 100
+#            {input}                        {output}       {# of test frames from the end}
 ```
 
-<details>
-<summary><span style="font-weight: bold;">Command Line Arguments for render_nersemble.py</span></summary>
+Notes:
+- INSTA recommends at least 1000 frames for training.
+- You can also use pretrained avatar models from:
+  - https://1drv.ms/u/c/c605a9d7c777e7ad/EX9KEcOnCgpOp_TWX0yCjO8BZlWfLv_Wbj3HDw6cPXwpIg?e=KJas7Z
+- Equivalent subject data can be acquired by running Metrical Tracker + INSTA and arranging into this repository layout.
 
-  #### --subject
-  Subject name for training (`074`  by default).
-  #### --output_dir
-  Path of the expeirment output folder (`output` by default).
-  #### --work_name
-  Name of the experiment to be rendered.
-  #### --white_bg
-  Whether to use white background, back by default.
-  #### --alpha
-  Whether to render the alpha channel.
+### 2.5 NeRSemble Notes
 
-</details>
+- Use preprocessed data compatible with `dataset/nersemble_ga_dataset.py`.
+- Set FLAME 2023 path for NeRSemble flow as expected by script.
+- Status in this fork: no additional implementation/testing for NeRSemble beyond inherited script path.
 
-## Citation
+## 3. Runtime Entry Points
 
+### 3.1 Offline Training
+
+```bash
+python train_offline.py --subject SUBJECT_NAME --work_name WORK_NAME --config config/offline.yaml --split train --preload
 ```
+
+Arguments:
+- `--subject`: subject directory name.
+- `--work_name`: experiment name (defaults to timestamp when omitted).
+- `--config`: YAML path.
+- `--split`: `train|test|all`.
+- `--preload`: preload images to CPU memory.
+
+### 3.2 Online Training
+
+```bash
+python train_online.py --subject SUBJECT_NAME --work_name WORK_NAME --config config/online.yaml --video_fps 25
+```
+
+### 3.3 Rendering (Single-view sequence + orbit)
+
+```bash
+python render.py --subject SUBJECT_NAME --output_dir output --work_name WORK_NAME
+```
+
+Optional:
+- `--white_bg`
+- `--alpha`
+- `--batch_size`
+- `--io_workers`
+- `--save_ply_start`
+- `--save_ply_end`
+- `--save_ply_every`
+- `--save_ply_interval`
+- `--disable_orbit`
+- `--orbit_anchor_idx`
+- `--orbit_fps`
+- `--orbit_duration_sec`
+- `--orbit_yaw_deg`
+- `--disable_orbit_gif`
+
+Example (save deformed PLY only for frames 100 to 200):
+
+```bash
+python render.py --subject SUBJECT_NAME --output_dir output --work_name WORK_NAME \
+  --save_ply_start 100 --save_ply_end 200 --save_ply_every 1
+```
+
+### 3.4 Evaluation
+
+```bash
+python calculate_metrics.py --subject SUBJECT_NAME --output_dir output --work_name WORK_NAME --split -350
+```
+
+### 3.5 NeRSemble
+
+```bash
+python train_offline_nersemble.py --subject SUBJECT_NAME --work_name WORK_NAME --config config/nersemble.yaml
+python render_nersemble.py --subject SUBJECT_NAME --output_dir output --work_name WORK_NAME
+```
+
+## 3.6 Input/Output Specification
+
+### A. Common Inputs 
+
+| Input | Location / Form | Role |
+|---|---|---|
+| Subject frames | `<data_dir>/<subject>/images/` | GT supervision images for train/render/metrics. |
+| Tracked params | `<data_dir>/<subject>/checkpoint/` | Per-frame FLAME/FuHead parameters to reconstruct/deform mesh. |
+| Template model | `data/FLAME2020/generic_model.pkl` (or FuHead assets) | Base mesh topology and parametric deformation source. |
+| Run config | `config/*.yaml` | Controls model density, optimizer, losses, data behavior, output path. |
+| Optional pretrained model | `<output>/<subject>/<work_name>/model.ply` | Loads trained Gaussian state for render/eval. |
+
+### B. Script-Level Inputs and Outputs
+
+#### `train_offline.py`
+
+Inputs:
+- `--subject`, `--config`, `--split`, `--preload`
+- Dataset frames/track params + template model
+- Config sections:
+  - `dataset`: loading behavior
+  - `model`: Gaussian topology/initialization (`tex_size`, `init_scaling`, ...)
+  - `train.recon`: optimizer/loss/schedule
+
+Outputs:
+- `<output>/<subject>/<work_name>/model.ply`
+  - Trained Gaussian parameters and blend bases (primary deployable artifact).
+- `<output>/<subject>/<work_name>/config.yaml`
+  - Frozen run config snapshot for reproducibility.
+- `<output>/<subject>/<work_name>/speed.txt`
+  - Training throughput summary.
+- TensorBoard logs (when enabled).
+
+#### `train_online.py`
+
+Inputs:
+- Video-time frame order from dataset + sampler policy (`train.sampler`)
+- `--video_fps` for stream pacing
+
+Outputs:
+- Same core outputs as offline (`model.ply`, `config.yaml`, `speed.txt`)
+- `sample.txt`, `step2frame.txt`
+  - Sampling history / mapping of optimization steps to source frame timeline.
+
+#### `render.py`
+
+Inputs:
+- `model.ply` from a trained run
+- Corresponding `config.yaml` in same run directory
+- Original subject data path (resolved from saved config)
+
+Outputs:
+- `render_image/*.png`
+  - Final per-frame rendered RGB (or RGBA with `--alpha`).
+- `deformed_ply/deformed_*.ply` (optional interval/range based)
+  - Per-frame deformed Gaussian geometry dump from the render pipeline.
+- `render_orbit/*.png` + `orbit_animation.gif`
+  - Novel-view orbit visualization.
+
+#### `calculate_metrics.py`
+
+Inputs:
+- Trained `model.ply`
+- Full dataset frames and masks
+
+Outputs:
+- `metrics.npz`
+  - Framewise arrays: `l1_error`, `l2_error`, `psnr`, `ssim`, `lpips`.
+- `metrics.txt`
+  - Aggregated train/test split summary.
+
+### C. Tensor-Level Input/Output Roles in Core Renderer
+
+`GaussianAttributes` runtime contract:
+- `xyz`: Gaussian center positions in world space after mesh binding.
+- `opacity`: alpha contribution strength per Gaussian.
+- `scaling`: anisotropic Gaussian size along local axes.
+- `rotation`: orientation quaternion for anisotropic splats.
+- `sh`: color representation (DC/SH channels used by rasterizer path).
+
+Raster output (`render_gs_batch` / batch rasterizer):
+- `color`: rendered RGB image tensor.
+- `alpha`: rendered alpha/mask tensor.
+- `est_color`: accumulated color estimator for fast-forward init.
+- `est_weight`: visibility/accumulation weight used for init and loss weighting.
+- `radii`: projected Gaussian size info (visibility/debug utility).
+
+## 4. System Architecture and Frame/Data Flow
+
+One training step in `model/reconstruction.py` executes in this order:
+
+1. Batch fetch [CPU->GPU]
+1. Background compositing
+1. Blend gating by `blend_start_iter`
+1. Local Gaussian attribute fetch (`get_batch_attributes`)
+1. Mesh-bound Gaussian deformation (`gaussian_deform_batch`)
+1. Rasterization (`BatchGaussianRenderer` / `render_gs_batch`)
+1. Loss aggregation
+1. Backprop + optimizer step
+1. Optional fast-forward update
+
+One rendering batch in `render.py` executes:
+
+1. Load mesh and blend weights
+1. Deform Gaussians for each frame in batch
+1. Optional deformed `.ply` export path
+1. Actual image rasterization (`render_gs_batch`)
+1. Write images to `render_image/`
+
+## 5. Core Contracts
+
+### 5.1 Binding Contract
+
+- Binding is generated from UV rasterization (`compute_rast_info`).
+- Each valid UV texel corresponds to one Gaussian.
+- Each Gaussian stores:
+  - `binding_face_id`
+  - `binding_face_bary`
+- Runtime deformation composes:
+  - triangle-space offsets
+  - face TBN rotation
+  - local Gaussian transform
+
+### 5.2 Gaussian Attribute Contract
+
+`GaussianAttributes` fields:
+- `xyz`: `[B,N,3]` or `[N,3]`
+- `opacity`: `[B,N,1]` or `[N,1]`
+- `scaling`: `[B,N,3]` or `[N,3]`
+- `rotation`: `[B,N,4]` or `[N,4]`
+- `sh`: `[B,N,1,3]`-compatible SH/DC layout in this repo flow
+
+All runtime tensors are expected as `float32` on CUDA during render/train.
+
+### 5.3 Loss Contract (Current Reconstruction Path)
+
+Configured in `train.recon`:
+- `lambda_charbonnier`
+- `lambda_ssim`
+- `lambda_lpips` (with warmup)
+- `lambda_alpha`
+- `lambda_sparsity`
+- `lambda_orth`
+- `lambda_normal`
+- `lambda_scale_l2`
+- `lambda_surface`
+
+Additional behavior:
+- LPIPS warmup schedule in `perceptual_loss`.
+- Surface bind loss penalizes local `z` offset before TBN binding.
+- Normal loss uses smooth vertex normals (`scatter_add_` accumulation).
+
+## 6. Configurations
+
+### 6.1 `config/offline.yaml` (current high-density tuning snapshot)
+
+- `model.tex_size`: `256` (update as needed for density target)
+- `model.init_scaling`: `0.0005`
+- `train.batch_size`: `4`
+- `train.recon.position_lr`: `0.0004`
+- `train.recon.position_lr_max_steps`: `45_000`
+- `train.recon.lambda_lpips`: `0.05`
+- `train.recon.lambda_scale_l2`: `0.15`
+- `train.recon.lambda_surface`: `0.5`
+
+### 6.2 `config/online.yaml`
+
+- Online sampler and replay parameters are defined under `train.sampler`.
+- Uses streaming training thread with frame ingestion.
+
+### 6.3 `config/nersemble.yaml`
+
+- Multi-view training config with extended iteration horizon.
+- FLAME 2023 path expectation is hardcoded in script.
+
+## 7. Output and Artifact Layout
+
+For a run:
+`<output_dir>/<subject>/<work_name>/`
+
+Typical artifacts:
+- `config.yaml` (copied run config)
+- `model.ply`
+- `speed.txt`
+- `metrics.npz` / `metrics.txt` (evaluation)
+- `render_image/*.png` (or `.jpg` in NeRSemble renderer)
+- `deformed_ply/*.ply` (optional, render-time export)
+- `render_orbit/*.png` and `orbit_animation.gif`
+
+## 8. Utilities
+
+### 8.1 Convert `.ply` to `.pt`
+
+```bash
+python tools/ply_to_pt.py --in path/to/point_cloud.ply --out point_cloud.pt --sh-degree auto
+```
+
+Useful options:
+- `--frest-layout`
+- `--scale-mode`
+- `--opacity-mode`
+
+## 9. Resource Constraints and Limits
+
+- GPU memory grows with `tex_size`, batch size, and image resolution.
+- `render.py` defaults to batch rendering and threaded image I/O.
+- Mixed OpenMP runtimes on Windows may require:
+  - `KMP_DUPLICATE_LIB_OK=TRUE`
+- `nvdiffrast` GL context creation can emit deprecation warning for `RasterizeGLContext`.
+
+## 10. Error Diagnostics
+
+### 10.1 Common Runtime Failures
+
+- `ModuleNotFoundError: yaml`
+  - Install PyYAML in the same interpreter used to run scripts.
+- `OMP: Error #15 ... libiomp5md.dll already initialized`
+  - Set `KMP_DUPLICATE_LIB_OK=TRUE` (workaround).
+- CUDA OOM
+  - Reduce `train.batch_size`, reduce `tex_size`, or lower input resolution.
+- Missing FLAME model file
+  - Verify `data/FLAME2020/generic_model.pkl` path.
+
+### 10.2 Config/Code Mismatch Risks
+
+- Ensure selected training path matches expected config keys.
+- Keep `train.recon` fields aligned with loss terms used by target reconstruction class.
+- Confirm `subject`, `output_dir`, and `work_name` correspond to existing trained run when rendering/evaluating.
+
+## 11. File Responsibilities
+
+- `train_offline.py`: single-view offline training entry.
+- `train_online.py`: online training loop and frame sampler thread.
+- `train_offline_nersemble.py`: multi-view NeRSemble training.
+- `render.py`: sequence rendering + optional deformed `.ply` export + orbit rendering.
+- `render_nersemble.py`: multi-camera validation rendering.
+- `calculate_metrics.py`: L1/L2/PSNR/SSIM/LPIPS evaluation.
+- `model/gaussian.py`: Gaussian parameter containers, blend projection, IO.
+- `model/binding.py`: UV-face binding and mesh-aware deformation.
+- `model/reconstruction.py`: main single-view reconstruction/training logic.
+- `model/mv_reconstruction.py`: multi-view reconstruction logic.
+- `diff_renderer/*`: rasterization wrappers.
+
+## 12. Citation
+
+```bibtex
+@misc{lee2026_perception_aware_gaussian_mesh,
+  author       = {Jinwoo Lee},
+  title        = {Perception-aware Gaussian-Mesh Hybrid Rendering for Autostereoscopic Telepresence},
+  year         = {2026},
+  howpublished = {GitHub repository},
+  publisher    = {GitHub},
+  journal      = {GitHub repository},
+  url          = {https://github.com/cinescope-wkr/Perception-aware-Gaussian-Mesh-Hybrid-Rendering-for-Autostereoscopic-Telepresence}
+}
+
 @InProceedings{Li_2025_CVPR,
     author    = {Li, Linzhou and Li, Yumeng and Weng, Yanlin and Zheng, Youyi and Zhou, Kun},
     title     = {RGBAvatar: Reduced Gaussian Blendshapes for Online Modeling of Head Avatars},
@@ -210,4 +522,3 @@ python render_nersemble.py --subject SUBJECT_NAME --work_name WORK_NAME
     pages     = {10747-10757}
 }
 ```
-
