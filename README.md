@@ -55,6 +55,26 @@ Supported workflows in this fork:
 - Export and reload model as `.ply` with basis parameters.
 - Utility conversion from 3DGS-style `.ply` to `.pt` tensor format.
 
+## Quick Navigation
+
+- [Fork Notice](#fork-notice)
+- [1. Build and Dependency Requirements](#1-build-and-dependency-requirements)
+- [2. Data and Asset Requirements](#2-data-and-asset-requirements)
+- [3. Runtime Entry Points](#3-runtime-entry-points)
+- [3.6 Input/Output Specification](#36-inputoutput-specification)
+- [4. System Architecture and Frame/Data Flow](#4-system-architecture-and-framedata-flow)
+- [5. Core Contracts](#5-core-contracts)
+- [6. Configurations](#6-configurations)
+- [7. Output and Artifact Layout](#7-output-and-artifact-layout)
+- [8. Utilities](#8-utilities)
+- [9. Resource Constraints and Limits](#9-resource-constraints-and-limits)
+- [10. Error Diagnostics](#10-error-diagnostics)
+- [11. File Responsibilities](#11-file-responsibilities)
+- [12. Citation](#12-citation)
+
+<details>
+<summary><strong>1. Build and Dependency Requirements</strong></summary>
+
 ## 1. Build and Dependency Requirements
 
 ### 1.1 Supported Host
@@ -85,6 +105,11 @@ pip install git+https://github.com/NVlabs/nvdiffrast
 pip install -r requirements.txt
 pip install submodules/diff-gaussian-rasterization
 ```
+
+</details>
+
+<details>
+<summary><strong>2. Data and Asset Requirements</strong></summary>
 
 ## 2. Data and Asset Requirements
 
@@ -194,6 +219,11 @@ Notes:
 - Set FLAME 2023 path for NeRSemble flow as expected by script.
 - Status in this fork: no additional implementation/testing for NeRSemble beyond inherited script path.
 
+</details>
+
+<details>
+<summary><strong>3. Runtime Entry Points</strong></summary>
+
 ## 3. Runtime Entry Points
 
 ### 3.1 Offline Training
@@ -256,6 +286,11 @@ python calculate_metrics.py --subject SUBJECT_NAME --output_dir output --work_na
 python train_offline_nersemble.py --subject SUBJECT_NAME --work_name WORK_NAME --config config/nersemble.yaml
 python render_nersemble.py --subject SUBJECT_NAME --output_dir output --work_name WORK_NAME
 ```
+
+</details>
+
+<details>
+<summary><strong>3.6 Input/Output Specification</strong></summary>
 
 ## 3.6 Input/Output Specification
 
@@ -344,6 +379,11 @@ Raster output (`render_gs_batch` / batch rasterizer):
 - `est_weight`: visibility/accumulation weight used for init and loss weighting.
 - `radii`: projected Gaussian size info (visibility/debug utility).
 
+</details>
+
+<details>
+<summary><strong>4. System Architecture and Frame/Data Flow</strong></summary>
+
 ## 4. System Architecture and Frame/Data Flow
 
 One training step in `model/reconstruction.py` executes in this order:
@@ -365,6 +405,11 @@ One rendering batch in `render.py` executes:
 1. Optional deformed `.ply` export path
 1. Actual image rasterization (`render_gs_batch`)
 1. Write images to `render_image/`
+
+</details>
+
+<details>
+<summary><strong>5. Core Contracts</strong></summary>
 
 ## 5. Core Contracts
 
@@ -409,6 +454,11 @@ Additional behavior:
 - Surface bind loss penalizes local `z` offset before TBN binding.
 - Normal loss uses smooth vertex normals (`scatter_add_` accumulation).
 
+</details>
+
+<details>
+<summary><strong>6. Configurations</strong></summary>
+
 ## 6. Configurations
 
 ### 6.1 `config/offline.yaml` (current high-density tuning snapshot)
@@ -432,6 +482,11 @@ Additional behavior:
 - Multi-view training config with extended iteration horizon.
 - FLAME 2023 path expectation is hardcoded in script.
 
+</details>
+
+<details>
+<summary><strong>7. Output and Artifact Layout</strong></summary>
+
 ## 7. Output and Artifact Layout
 
 For a run:
@@ -446,6 +501,11 @@ Typical artifacts:
 - `deformed_ply/*.ply` (optional, render-time export)
 - `render_orbit/*.png` and `orbit_animation.gif`
 
+</details>
+
+<details>
+<summary><strong>8. Utilities</strong></summary>
+
 ## 8. Utilities
 
 ### 8.1 Convert `.ply` to `.pt`
@@ -459,6 +519,11 @@ Useful options:
 - `--scale-mode`
 - `--opacity-mode`
 
+</details>
+
+<details>
+<summary><strong>9. Resource Constraints and Limits</strong></summary>
+
 ## 9. Resource Constraints and Limits
 
 - GPU memory grows with `tex_size`, batch size, and image resolution.
@@ -466,6 +531,11 @@ Useful options:
 - Mixed OpenMP runtimes on Windows may require:
   - `KMP_DUPLICATE_LIB_OK=TRUE`
 - `nvdiffrast` GL context creation can emit deprecation warning for `RasterizeGLContext`.
+
+</details>
+
+<details>
+<summary><strong>10. Error Diagnostics</strong></summary>
 
 ## 10. Error Diagnostics
 
@@ -486,6 +556,11 @@ Useful options:
 - Keep `train.recon` fields aligned with loss terms used by target reconstruction class.
 - Confirm `subject`, `output_dir`, and `work_name` correspond to existing trained run when rendering/evaluating.
 
+</details>
+
+<details>
+<summary><strong>11. File Responsibilities</strong></summary>
+
 ## 11. File Responsibilities
 
 - `train_offline.py`: single-view offline training entry.
@@ -499,6 +574,11 @@ Useful options:
 - `model/reconstruction.py`: main single-view reconstruction/training logic.
 - `model/mv_reconstruction.py`: multi-view reconstruction logic.
 - `diff_renderer/*`: rasterization wrappers.
+
+</details>
+
+<details>
+<summary><strong>12. Citation</strong></summary>
 
 ## 12. Citation
 
@@ -522,3 +602,5 @@ Useful options:
     pages     = {10747-10757}
 }
 ```
+
+</details>
