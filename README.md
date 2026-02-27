@@ -61,18 +61,18 @@ Supported workflows in this fork:
 - [1. Build and Dependency Requirements](#1-build-and-dependency-requirements)
 - [2. Data and Asset Requirements](#2-data-and-asset-requirements)
 - [3. Runtime Entry Points](#3-runtime-entry-points)
-- [3.6 Input/Output Specification](#36-inputoutput-specification)
-- [4. System Architecture and Frame/Data Flow](#4-system-architecture-and-framedata-flow)
-- [5. Core Contracts](#5-core-contracts)
-- [6. Configurations](#6-configurations)
-- [7. Output and Artifact Layout](#7-output-and-artifact-layout)
-- [8. Utilities](#8-utilities)
-- [9. Resource Constraints and Limits](#9-resource-constraints-and-limits)
-- [10. Error Diagnostics](#10-error-diagnostics)
-- [11. File Responsibilities](#11-file-responsibilities)
-- [12. Citation](#12-citation)
+- [4. Input/Output Specification](#4-inputoutput-specification)
+- [5. System Architecture and Frame/Data Flow](#5-system-architecture-and-framedata-flow)
+- [6. Core Contracts](#6-core-contracts)
+- [7. Configurations](#7-configurations)
+- [8. Output and Artifact Layout](#8-output-and-artifact-layout)
+- [9. Utilities](#9-utilities)
+- [10. Resource Constraints and Limits](#10-resource-constraints-and-limits)
+- [11. Error Diagnostics](#11-error-diagnostics)
+- [12. File Responsibilities](#12-file-responsibilities)
+- [13. Citation](#13-citation)
 
-<details>
+<details open>
 <summary><strong>1. Build and Dependency Requirements</strong></summary>
 
 ## 1. Build and Dependency Requirements
@@ -108,7 +108,7 @@ pip install submodules/diff-gaussian-rasterization
 
 </details>
 
-<details>
+<details open>
 <summary><strong>2. Data and Asset Requirements</strong></summary>
 
 ## 2. Data and Asset Requirements
@@ -221,7 +221,7 @@ Notes:
 
 </details>
 
-<details>
+<details open>
 <summary><strong>3. Runtime Entry Points</strong></summary>
 
 ## 3. Runtime Entry Points
@@ -289,10 +289,10 @@ python render_nersemble.py --subject SUBJECT_NAME --output_dir output --work_nam
 
 </details>
 
-<details>
-<summary><strong>3.6 Input/Output Specification</strong></summary>
+<details open>
+<summary><strong>4. Input/Output Specification</strong></summary>
 
-## 3.6 Input/Output Specification
+## 4. Input/Output Specification
 
 ### A. Common Inputs 
 
@@ -382,9 +382,9 @@ Raster output (`render_gs_batch` / batch rasterizer):
 </details>
 
 <details>
-<summary><strong>4. System Architecture and Frame/Data Flow</strong></summary>
+<summary><strong>5. System Architecture and Frame/Data Flow</strong></summary>
 
-## 4. System Architecture and Frame/Data Flow
+## 5. System Architecture and Frame/Data Flow
 
 One training step in `model/reconstruction.py` executes in this order:
 
@@ -409,11 +409,11 @@ One rendering batch in `render.py` executes:
 </details>
 
 <details>
-<summary><strong>5. Core Contracts</strong></summary>
+<summary><strong>6. Core Contracts</strong></summary>
 
-## 5. Core Contracts
+## 6. Core Contracts
 
-### 5.1 Binding Contract
+### 6.1 Binding Contract
 
 - Binding is generated from UV rasterization (`compute_rast_info`).
 - Each valid UV texel corresponds to one Gaussian.
@@ -425,7 +425,7 @@ One rendering batch in `render.py` executes:
   - face TBN rotation
   - local Gaussian transform
 
-### 5.2 Gaussian Attribute Contract
+### 6.2 Gaussian Attribute Contract
 
 `GaussianAttributes` fields:
 - `xyz`: `[B,N,3]` or `[N,3]`
@@ -436,7 +436,7 @@ One rendering batch in `render.py` executes:
 
 All runtime tensors are expected as `float32` on CUDA during render/train.
 
-### 5.3 Loss Contract (Current Reconstruction Path)
+### 6.3 Loss Contract (Current Reconstruction Path)
 
 Configured in `train.recon`:
 - `lambda_charbonnier`
@@ -457,11 +457,11 @@ Additional behavior:
 </details>
 
 <details>
-<summary><strong>6. Configurations</strong></summary>
+<summary><strong>7. Configurations</strong></summary>
 
-## 6. Configurations
+## 7. Configurations
 
-### 6.1 `config/offline.yaml` (current high-density tuning snapshot)
+### 7.1 `config/offline.yaml` (current high-density tuning snapshot)
 
 - `model.tex_size`: `256` (update as needed for density target)
 - `model.init_scaling`: `0.0005`
@@ -472,12 +472,12 @@ Additional behavior:
 - `train.recon.lambda_scale_l2`: `0.15`
 - `train.recon.lambda_surface`: `0.5`
 
-### 6.2 `config/online.yaml`
+### 7.2 `config/online.yaml`
 
 - Online sampler and replay parameters are defined under `train.sampler`.
 - Uses streaming training thread with frame ingestion.
 
-### 6.3 `config/nersemble.yaml`
+### 7.3 `config/nersemble.yaml`
 
 - Multi-view training config with extended iteration horizon.
 - FLAME 2023 path expectation is hardcoded in script.
@@ -485,9 +485,9 @@ Additional behavior:
 </details>
 
 <details>
-<summary><strong>7. Output and Artifact Layout</strong></summary>
+<summary><strong>8. Output and Artifact Layout</strong></summary>
 
-## 7. Output and Artifact Layout
+## 8. Output and Artifact Layout
 
 For a run:
 `<output_dir>/<subject>/<work_name>/`
@@ -504,11 +504,11 @@ Typical artifacts:
 </details>
 
 <details>
-<summary><strong>8. Utilities</strong></summary>
+<summary><strong>9. Utilities</strong></summary>
 
-## 8. Utilities
+## 9. Utilities
 
-### 8.1 Convert `.ply` to `.pt`
+### 9.1 Convert `.ply` to `.pt`
 
 ```bash
 python tools/ply_to_pt.py --in path/to/point_cloud.ply --out point_cloud.pt --sh-degree auto
@@ -522,9 +522,9 @@ Useful options:
 </details>
 
 <details>
-<summary><strong>9. Resource Constraints and Limits</strong></summary>
+<summary><strong>10. Resource Constraints and Limits</strong></summary>
 
-## 9. Resource Constraints and Limits
+## 10. Resource Constraints and Limits
 
 - GPU memory grows with `tex_size`, batch size, and image resolution.
 - `render.py` defaults to batch rendering and threaded image I/O.
@@ -534,12 +534,12 @@ Useful options:
 
 </details>
 
-<details>
-<summary><strong>10. Error Diagnostics</strong></summary>
+<details open>
+<summary><strong>11. Error Diagnostics</strong></summary>
 
-## 10. Error Diagnostics
+## 11. Error Diagnostics
 
-### 10.1 Common Runtime Failures
+### 11.1 Common Runtime Failures
 
 - `ModuleNotFoundError: yaml`
   - Install PyYAML in the same interpreter used to run scripts.
@@ -550,7 +550,7 @@ Useful options:
 - Missing FLAME model file
   - Verify `data/FLAME2020/generic_model.pkl` path.
 
-### 10.2 Config/Code Mismatch Risks
+### 11.2 Config/Code Mismatch Risks
 
 - Ensure selected training path matches expected config keys.
 - Keep `train.recon` fields aligned with loss terms used by target reconstruction class.
@@ -558,10 +558,10 @@ Useful options:
 
 </details>
 
-<details>
-<summary><strong>11. File Responsibilities</strong></summary>
+<details open>
+<summary><strong>12. File Responsibilities</strong></summary>
 
-## 11. File Responsibilities
+## 12. File Responsibilities
 
 - `train_offline.py`: single-view offline training entry.
 - `train_online.py`: online training loop and frame sampler thread.
@@ -577,10 +577,10 @@ Useful options:
 
 </details>
 
-<details>
-<summary><strong>12. Citation</strong></summary>
+<details open>
+<summary><strong>13. Citation</strong></summary>
 
-## 12. Citation
+## 13. Citation
 
 ```bibtex
 @misc{lee2026_perception_aware_gaussian_mesh,
