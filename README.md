@@ -46,6 +46,21 @@ Changes in this fork:
 - Export and reload model as `.ply` with basis parameters.
 - Utility conversion from 3DGS-style `.ply` to `.pt` tensor format (useful for LibTorch/C++ or custom runtime loaders that consume tensor checkpoints instead of PLY parsing).
 
+## TL;DR (Quick Start)
+
+```bash
+# 1) Install
+conda create -n rgbavatar python=3.10 -y && conda activate rgbavatar
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+pip install git+https://github.com/NVlabs/nvdiffrast && pip install -r requirements.txt && pip install submodules/diff-gaussian-rasterization
+
+# 2) Put data at: ./INSTA/<SUBJECT_NAME>/{images,checkpoint} and FLAME at: ./data/FLAME2020/generic_model.pkl
+# 3) Train
+python train_offline.py --subject <SUBJECT_NAME> --work_name <RUN_NAME> --config config/offline.yaml --split train --preload
+# 4) Render
+python render.py --subject <SUBJECT_NAME> --output_dir output --work_name <RUN_NAME>
+```
+
 ## Quick Navigation
 
 - [Fork Notice](#fork-notice)
