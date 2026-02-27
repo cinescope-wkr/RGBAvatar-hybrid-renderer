@@ -1,19 +1,19 @@
 # RGBAvatar Technical Specification
 
-Official codebase for CVPR 2025 paper:
+Forked and modified codebase based on the CVPR 2025 paper:
 `RGBAvatar: Reduced Gaussian Blendshapes for Online Modeling of Head Avatars`.
 
 Paper: [RGBAvatar (CVPR 2025)](https://arxiv.org/pdf/2503.12886)  
 Project page: [RGBAvatar Website](https://gapszju.github.io/RGBAvatar/)
-Original RGBAvatar repository: [gapszju/RGBAvatar](https://github.com/gapszju/RGBAvatar)
+GitHub repository: [gapszju/RGBAvatar](https://github.com/gapszju/RGBAvatar)
 
 ## Fork Notice
 
-This repository is a fork of the original RGBAvatar project.
-It was modified in part for Gaussian-mesh hybrid rendering research workflows while keeping the RGBAvatar training/rendering pipeline usable.
-
-Fork maintainer:
-- Jinwoo Lee (cinescope@kaist.ac.kr)
+> [!NOTE]
+> This repository is a fork of the RGBAvatar project.
+> It is modified in part for Gaussian-mesh hybrid rendering research workflows while keeping the RGBAvatar training/rendering pipeline usable.
+>
+> **Fork maintainer**: Jinwoo Lee (cinescope@kaist.ac.kr)
 
 Changes in this fork:
 - `render.py` modernization:
