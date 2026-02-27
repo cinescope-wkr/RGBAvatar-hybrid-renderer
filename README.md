@@ -3,9 +3,9 @@
 Official codebase for CVPR 2025 paper:
 `RGBAvatar: Reduced Gaussian Blendshapes for Online Modeling of Head Avatars`.
 
-Paper: https://arxiv.org/pdf/2503.12886  
-Project page: https://gapszju.github.io/RGBAvatar/
-Original RGBAvatar repository: https://github.com/gapszju/RGBAvatar
+Paper: [RGBAvatar (CVPR 2025)](https://arxiv.org/pdf/2503.12886)  
+Project page: [RGBAvatar Website](https://gapszju.github.io/RGBAvatar/)
+Original RGBAvatar repository: [gapszju/RGBAvatar](https://github.com/gapszju/RGBAvatar)
 
 ## Fork Notice
 
@@ -31,10 +31,10 @@ Changes in this fork:
 
 ### External References
 
-- INSTA: https://github.com/Zielon/INSTA?tab=readme-ov-file#dataset-and-training
-- Metrical Photometric Tracker: https://github.com/Zielon/metrical-tracker
-- FLAME model download: https://flame.is.tue.mpg.de/download.php
-- Pretrained avatar models (OneDrive): https://1drv.ms/u/c/c605a9d7c777e7ad/EX9KEcOnCgpOp_TWX0yCjO8BZlWfLv_Wbj3HDw6cPXwpIg?e=KJas7Z
+- [Dataset Generation (INSTA)](https://github.com/Zielon/INSTA?tab=readme-ov-file#dataset-and-training)
+- [Metrical Photometric Tracker](https://github.com/Zielon/metrical-tracker)
+- [FLAME Model Download](https://flame.is.tue.mpg.de/download.php)
+- [Pretrained Avatar Models (OneDrive)](https://1drv.ms/u/c/c605a9d7c777e7ad/EX9KEcOnCgpOp_TWX0yCjO8BZlWfLv_Wbj3HDw6cPXwpIg?e=KJas7Z)
 
 ### Functional Capabilities
 
@@ -106,8 +106,7 @@ pip install submodules/diff-gaussian-rasterization
 
 ### 2.1 FLAME Model
 
-- Download FLAME 2020 model from FLAME website:
-  - https://flame.is.tue.mpg.de/download.php
+- Download FLAME 2020 model from [FLAME website](https://flame.is.tue.mpg.de/download.php).
 - Place `generic_model.pkl` under:
   - `data/FLAME2020/generic_model.pkl`
 
@@ -200,8 +199,7 @@ python tracker.py --cfg ./configs/actors/duda.yml
 
 Notes:
 - INSTA recommends at least 1000 frames for training.
-- You can also use pretrained avatar models from:
-  - https://1drv.ms/u/c/c605a9d7c777e7ad/EX9KEcOnCgpOp_TWX0yCjO8BZlWfLv_Wbj3HDw6cPXwpIg?e=KJas7Z
+- You can also use [pretrained avatar models](https://1drv.ms/u/c/c605a9d7c777e7ad/EX9KEcOnCgpOp_TWX0yCjO8BZlWfLv_Wbj3HDw6cPXwpIg?e=KJas7Z).
 - Equivalent subject data can be acquired by running Metrical Tracker + INSTA and arranging into this repository layout.
 
 ### 2.5 NeRSemble Notes
