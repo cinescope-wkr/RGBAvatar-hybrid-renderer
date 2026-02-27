@@ -28,15 +28,6 @@ Changes in this fork:
   - Added/used surface bind regularization (`lambda_surface`), LPIPS warmup behavior, and tuned high-density defaults in `config/offline.yaml`.
 - Documentation overhaul:
   - README rewritten as technical spec with explicit input/output contracts, dataset layout, command references, and external preprocessing links.
-- NeRSemble status:
-  - NeRSemble scripts are kept, but no additional implementation/testing beyond inherited baseline has been performed in this fork.
-
-Supported workflows in this fork:
-- Offline training (`train_offline.py`)
-- Online training (`train_online.py`)
-- Multi-view NeRSemble training (`train_offline_nersemble.py`)
-- Rendering (`render.py`, `render_nersemble.py`)
-- Metrics (`calculate_metrics.py`)
 
 ### External References
 
@@ -53,7 +44,7 @@ Supported workflows in this fork:
 - Fast-forward color initialization for uninitialized Gaussians.
 - Training losses including Charbonnier/SSIM/LPIPS/alpha/sparsity/orth/normal/scale/surface-bind.
 - Export and reload model as `.ply` with basis parameters.
-- Utility conversion from 3DGS-style `.ply` to `.pt` tensor format.
+- Utility conversion from 3DGS-style `.ply` to `.pt` tensor format (useful for LibTorch/C++ or custom runtime loaders that consume tensor checkpoints instead of PLY parsing).
 
 ## Quick Navigation
 
@@ -217,7 +208,6 @@ Notes:
 
 - Use preprocessed data compatible with `dataset/nersemble_ga_dataset.py`.
 - Set FLAME 2023 path for NeRSemble flow as expected by script.
-- Status in this fork: no additional implementation/testing for NeRSemble beyond inherited script path.
 
 </details>
 
@@ -509,6 +499,8 @@ Typical artifacts:
 ## 9. Utilities
 
 ### 9.1 Convert `.ply` to `.pt`
+
+Use this when downstream runtime/tooling expects tensor files (`.pt`) and you want to avoid implementing a PLY parser in that path.
 
 ```bash
 python tools/ply_to_pt.py --in path/to/point_cloud.ply --out point_cloud.pt --sh-degree auto
