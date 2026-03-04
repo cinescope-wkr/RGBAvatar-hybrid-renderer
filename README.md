@@ -26,8 +26,8 @@ Changes in this fork:
   - Loss blocks and scheduling logic documented and organized for maintainability.
 - Configuration and training updates for dense fixed-topology runs:
   - Added/used surface bind regularization (`lambda_surface`), LPIPS warmup behavior, and tuned high-density defaults in `config/offline.yaml`.
-- Documentation overhaul:
-  - README rewritten as technical spec with explicit input/output contracts, dataset layout, command references, and external preprocessing links.
+- Documentation:
+  - README rewritten as technical documentation with explicit input/output contracts, dataset layout, command references, and external preprocessing links.
 
 ### External References
 
