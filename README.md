@@ -127,7 +127,9 @@ pip install submodules/diff-gaussian-rasterization
 - Place `generic_model.pkl` under:
   - `data/FLAME2020/generic_model.pkl`
 
-### 2.2 Offline Dataset Layout (INSTA-style)
+### 2.2 Offline Dataset Layout 
+
+- The dataset follows INSTA-style.
 
 ```text
 <DATA_DIR>/
@@ -138,7 +140,7 @@ pip install submodules/diff-gaussian-rasterization
 
 - Set `data_dir` in config files (`config/offline.yaml`, etc.) to `<DATA_DIR>`.
 
-### 2.3 Subject Dataset Contract (What Must Exist)
+### 2.3 Subject Dataset Contract
 
 For each `subject`, training/evaluation scripts resolve:
 
@@ -173,7 +175,7 @@ Required conditions:
 - Image count should match tracked frame count for clean training behavior.
 - Alpha/mask channels should already be reflected in `images/` content produced by preprocessing.
 
-### 2.4 How to Build Subject Data (Metrical Tracker -> INSTA)
+### 2.4 How to Build Subject Data
 
 This repo expects the final subject folder shown above. A practical pipeline is:
 
