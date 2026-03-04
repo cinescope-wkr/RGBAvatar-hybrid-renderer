@@ -1,4 +1,4 @@
-# RGBAvatar Technical Specification
+# RGBAvatar Gaussian-mesh Hybrid Renderer
 
 Forked and modified codebase based on the CVPR 2025 paper:
 `RGBAvatar: Reduced Gaussian Blendshapes for Online Modeling of Head Avatars`.
